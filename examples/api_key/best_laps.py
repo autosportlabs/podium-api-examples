@@ -1,16 +1,19 @@
-"""Find the best lap of every session at the events matching a search.
+"""Find the best lap of every session you ran at a track.
 
 This is the "what was my best lap at Thunderhill?" question, answered with an
 API key and nothing but HTTP:
 
-    python examples/api_key/best_laps.py Thunderhill
-    python examples/api_key/best_laps.py Thunderhill --since 2026-01-01
+    python examples/api_key/best_laps.py thunderhill
+    python examples/api_key/best_laps.py "thunderhill east" --since 2026-01-01
 
-The key needs the event_read, event_device_read and lap_read scopes. Set it as
-PODIUM_API_KEY in .env (see .env.example).
+Sessions are found by venue (`venue_name` on /v1/event-devices/), so this
+includes sessions at events another account organised, such as a series race.
+Layouts are different tracks, so the results are grouped by layout.
 
-The search covers events your account created. A session at an event another
-account organised is not found this way; list /v1/event-devices/ instead.
+The key needs the event_device_read and lap_read scopes, and event_read for the
+names of your own events. Set it as PODIUM_API_KEY in .env (see .env.example).
+
+An agent answers the same question in one MCP call, get_best_laps.
 """
 
 import argparse
@@ -80,8 +83,12 @@ def format_lap_time(minutes: float) -> str:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    parser.add_argument("search", help="Text to match in event names and notes, e.g. a track name")
-    parser.add_argument("--since", type=date.fromisoformat, help="Only events starting on or after this date")
+    parser.add_argument(
+        "track", help='Words in the venue name or layout, e.g. "thunderhill" or "thunderhill east"'
+    )
+    parser.add_argument(
+        "--since", type=date.fromisoformat, help="Only sessions starting on or after this date (UTC)"
+    )
     args = parser.parse_args()
 
     api_key = os.environ.get("PODIUM_API_KEY")
@@ -95,19 +102,29 @@ def main() -> int:
         timeout=30,
     )
     try:
-        events = [
-            event
-            for event in paginate(client, "events/", {"search": args.search})
-            if not args.since or datetime.fromisoformat(event["start_at"]).date() >= args.since
+        sessions = [
+            session
+            for session in paginate(client, "event-devices/", {"venue_name": args.track})
+            if not args.since or datetime.fromisoformat(session["start_time"]).date() >= args.since
         ]
-        if not events:
-            print(f"No events match {args.search!r}.")
+        if not sessions:
+            print(f"No sessions at a venue matching {args.track!r}.")
             return 0
+        # Names of your own events. An event another account organised is not
+        # readable, so its sessions show only where they ran.
+        event_names = {
+            event["id"]: event["name"] for event in paginate(client, "events/", {"venue_name": args.track})
+        }
 
-        overall: tuple[float, str] | None = None
-        for event in sorted(events, key=lambda e: e["start_at"]):
-            print(f"\n{event['name']}  ({event['start_at'][:10]})")
-            for session in paginate(client, "event-devices/", {"event": event["id"]}):
+        layouts: dict[str, list[dict[str, Any]]] = {}
+        for session in sessions:
+            layouts.setdefault(session["venue"]["id"], []).append(session)
+
+        for layout_sessions in layouts.values():
+            venue = layout_sessions[0]["venue"]
+            print(f"\n{venue['name']} {venue['configuration']}".rstrip())
+            best_here: tuple[float, str] | None = None
+            for session in sorted(layout_sessions, key=lambda s: s["start_time"]):
                 # A lap with no lap_time is an untimed fragment (an out lap or
                 # in lap), not a lap. A lap time of 0 is a timed lap, counted and
                 # numbered like the others, but a timing glitch, so never "best":
@@ -119,7 +136,9 @@ def main() -> int:
                 ]
                 candidates = [lap for lap in timed if lap["lap_time"] > 0]
                 number = session["competitor_number"]
-                label = f"car {number}" if number else f"session {session['id'][:8]}"
+                car = f"car {number}" if number else f"session {session['id'][:8]}"
+                where = event_names.get(session["event"], "an event another account organised")
+                label = f"{session['start_time'][:10]} {where}, {car}"
                 if not candidates:
                     print(f"  {label}: no timed laps")
                     continue
@@ -128,11 +147,10 @@ def main() -> int:
                     f"  {label}: best lap {best['lap_number']} in {format_lap_time(best['lap_time'])}"
                     f" of {len(timed)} timed laps"
                 )
-                if overall is None or best["lap_time"] < overall[0]:
-                    overall = (best["lap_time"], f"{event['name']}, lap {best['lap_number']}")
-
-        if overall:
-            print(f"\nBest overall: {format_lap_time(overall[0])} at {overall[1]}")
+                if best_here is None or best["lap_time"] < best_here[0]:
+                    best_here = (best["lap_time"], f"{where}, {session['start_time'][:10]}")
+            if best_here:
+                print(f"  Best here: {format_lap_time(best_here[0])} at {best_here[1]}")
         return 0
     except PodiumError as error:
         print(f"Podium refused the request: {error}", file=sys.stderr)

@@ -8,6 +8,7 @@ Errors are JSON. Most carry a `detail` message; a bad filter names the field ins
 | --- | --- | --- | --- |
 | 400 | `{"time_filter": ["Select a valid choice. …"]}` | A filter or body value is invalid | Fix the request |
 | 400 | `{"streaming": ["Use true or false."]}` | A boolean filter got something other than `true`, `false`, `1` or `0` | Fix the request |
+| 400 | `{"venue": ["Enter a valid UUID."]}` | An ID filter got something that is not an ID | Fix the request |
 | 401 | `{"detail": "Authentication credentials were not provided."}` | No credential | Send one |
 | 401 | `{"detail": "Invalid or inactive API key."}` | Wrong, revoked or deleted key | Use a current key |
 | 401 | `{"detail": "Invalid or expired access token."}` | Expired, revoked or disconnected token | Refresh, or sign the user in again |

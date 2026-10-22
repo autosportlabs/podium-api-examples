@@ -22,7 +22,7 @@ request acts for and who holds the credential.
 ```bash
 make venv
 cp .env.example .env      # then add the credentials the example you want needs
-.venv/bin/python examples/api_key/best_laps.py Thunderhill
+.venv/bin/python examples/api_key/best_laps.py thunderhill
 ```
 
 Start with [Getting started](docs/getting-started.md). It covers access and the first request.
@@ -39,7 +39,7 @@ Start with [Getting started](docs/getting-started.md). It covers access and the 
 
 | Script | What it shows |
 | --- | --- |
-| [`api_key/best_laps.py`](examples/api_key/best_laps.py) | Search events, walk sessions and laps, find the best lap, over plain REST. Pagination, rate limits, errors. (An agent does this in one MCP call, `get_best_laps`.) |
+| [`api_key/best_laps.py`](examples/api_key/best_laps.py) | Find every session at a track by venue, then its best lap, grouped by layout, over plain REST. Pagination, rate limits, errors. (An agent does this in one MCP call, `get_best_laps`.) |
 | [`api_key/live_stream_link.py`](examples/api_key/live_stream_link.py) | Check whether a session is streaming, then create a short-lived link to its live telemetry. |
 | [`live_stream/live_telemetry.py`](examples/live_stream/live_telemetry.py) | Print a session's live telemetry to the console as `channel=value;channel=value`. Status goes to standard error, so the output pipes cleanly. |
 | [`oauth_cli/podium_oauth.py`](examples/oauth_cli/podium_oauth.py) | Sign-in for a desktop or command-line program: a public client with PKCE and a loopback redirect. Refresh and sign-out. |

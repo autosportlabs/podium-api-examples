@@ -6,8 +6,8 @@
 Runs what it can with the credentials it finds and skips the rest:
 
 - always: the OAuth and MCP discovery documents and the unauthenticated answers;
-- with PODIUM_API_KEY: every /v1/ list endpoint, filters (including `streaming`
-  and the boolean filters) and pagination;
+- with PODIUM_API_KEY: every /v1/ list endpoint, filters (including `streaming`,
+  the venue filters and the boolean filters) and pagination;
 - with tokens saved by examples/oauth_cli (and PODIUM_PUBLIC_CLIENT_ID): a
   refresh, a Bearer call to /v1/, and a tools/list on /mcp.
 
@@ -198,7 +198,45 @@ if API_KEY:
             )
             assert response.status_code == expected, f"is_archived={value}: status {response.status_code}"
 
+    def rows_carry_venue() -> str:
+        notes = []
+        for path in ("events/", "event-devices/"):
+            response = http.get(f"{API_BASE}/v1/{path}", params={"page_size": 100}, headers=key_headers)
+            assert response.status_code == 200, f"{path} status {response.status_code}"
+            rows = response.json()["results"]
+            assert all("venue" in row for row in rows), f"{path} row without venue"
+            venues = [row["venue"] for row in rows if row["venue"]]
+            # Only the three public fields: never location, geometry or creator.
+            assert all(set(venue) == {"id", "name", "configuration"} for venue in venues), (
+                f"{path} venue keys"
+            )
+            notes.append(f"{path} {len(venues)}/{len(rows)} with a venue")
+            found.setdefault("venue_word", next((venue["name"].split()[0] for venue in venues), ""))
+        return "; ".join(notes)
+
+    def venue_filters() -> str:
+        bad = http.get(f"{API_BASE}/v1/event-devices/", params={"venue": "not-a-venue"}, headers=key_headers)
+        assert bad.status_code == 400 and "venue" in bad.json(), f"bad venue id: status {bad.status_code}"
+        word = found.get("venue_word")
+        if not word:
+            return "bad id refused; no venue to filter by"
+        response = http.get(
+            f"{API_BASE}/v1/event-devices/",
+            params={"venue_name": word, "page_size": 100},
+            headers=key_headers,
+        )
+        assert response.status_code == 200, f"status {response.status_code}"
+        rows = response.json()["results"]
+
+        def venue_text(venue: dict) -> str:
+            return f"{venue['name']} {venue['configuration']}".lower()
+
+        assert rows and all(word.lower() in venue_text(row["venue"]) for row in rows), "a row does not match"
+        return f"bad id refused; venue_name={word!r} -> {len(rows)}"
+
     check("API key: sessions carry `streaming`", sessions_carry_streaming)
+    check("API key: events and sessions carry `venue`, three fields only", rows_carry_venue)
+    check("API key: venue filters narrow, and a bad venue id is refused", venue_filters)
     check("API key: the streaming filter lists only live sessions", streaming_filter)
     check(
         "API key: a boolean filter takes true/false/1/0 and refuses anything else", boolean_filters_are_strict

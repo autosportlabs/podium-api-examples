@@ -11,8 +11,8 @@ A credential sees one account's data, the account of the user it acts for:
 - **Devices** that account owns, except deleted ones.
 - **Sessions** of that account's devices, wherever they ran. That includes sessions at events
   another account organised, such as a series race. Those events are not readable: their
-  sessions list the event's ID, but `GET /v1/events/{id}/` answers 404 and an event search
-  does not find them.
+  sessions list the event's ID and venue, but `GET /v1/events/{id}/` answers 404 and an event
+  search does not find them.
 - **Laps** of those sessions.
 
 ## Conventions
@@ -26,6 +26,28 @@ A credential sees one account's data, the account of the user it acts for:
 - **Read-only,** apart from creating live stream links.
 - **Boolean filters** take `true`, `false`, `1` or `0`, in any case. Anything else answers
   `400`, rather than being ignored and returning an unfiltered list.
+
+## Venues
+
+Events and sessions carry the track they ran at as `venue`, or `null` when the event has none:
+
+```json
+{"id": "3a1ed453-e952-4b7a-acba-044ca67980b3", "name": "Thunderhill Raceway Park", "configuration": "East"}
+```
+
+`configuration` is the layout, an empty string when the venue has none. **Layouts are different
+tracks:** East, West and the full course at one venue have different lap times, so compare laps
+only within one `venue.id`.
+
+The event and session lists filter by venue:
+
+| Filter | Meaning |
+| --- | --- |
+| `venue` | Venue ID, for an exact match |
+| `venue_name` | Every word must appear in the venue's name or layout. `thunderhill` matches every Thunderhill layout; `thunderhill east` only the East one |
+
+Both only narrow your own events and sessions, so they match only venues where you have
+been. A malformed `venue` answers `400`.
 
 ## Pagination
 
@@ -65,6 +87,7 @@ Newest created first.
 | --- | --- |
 | `search` | Text in the name or notes |
 | `time_filter` | `UPCOMING`, `IN_PROGRESS` or `PAST` |
+| `venue`, `venue_name` | The event's venue; see [Venues](#venues) |
 
 | Field | Type | Notes |
 | --- | --- | --- |
@@ -76,6 +99,7 @@ Newest created first.
 | `start_at`, `end_at` | time | |
 | `is_private` | boolean | |
 | `time_range_auto_adjustable` | boolean | Podium widens the range to fit the telemetry it receives |
+| `venue` | object or null | Where it was held; see [Venues](#venues) |
 | `created_at`, `updated_at` | time | |
 
 ## Devices
@@ -121,6 +145,7 @@ Newest first, by start time. A session of a device that has since been deleted i
 | `device` | Device ID |
 | `is_archived` | Boolean |
 | `streaming` | Boolean: only the sessions whose device is, or is not, streaming right now. If Podium cannot check, the list answers `503` with `Retry-After: 5`, rather than a wrong list |
+| `venue`, `venue_name` | Where the session ran; see [Venues](#venues). This finds your sessions at events another account organised, which an event search cannot |
 
 | Field | Type | Notes |
 | --- | --- | --- |
@@ -134,6 +159,7 @@ Newest first, by start time. A session of a device that has since been deleted i
 | `device_sn` | string | The logger's serial number, when known. Empty string if not. **API keys only:** absent for OAuth tokens, because it is usually the device's streaming key |
 | `competitor_number` | string | The car number, when known. Empty string if not |
 | `streaming` | boolean or null | `true` while the device is streaming this session right now, `false` when it is not, `null` when Podium cannot tell |
+| `venue` | object or null | Where it ran, also at events another account organised; see [Venues](#venues) |
 
 ### Live stream links
 

@@ -217,7 +217,7 @@ async def run(track: str | None) -> None:
             on_track = (live.structured_content or {}).get("items", [])
             print(f"\nOn track now: {len(on_track)} session(s)")
             for session in on_track:
-                print(f"  car {session['competitor_number'] or '?'}  session {session['id']}")
+                print(f"  car {session['competitor_number'] or '?'} at {describe_venue(session['venue'])}")
 
         if track:
             await best_laps_at(client, track)
