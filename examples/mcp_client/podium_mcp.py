@@ -207,10 +207,10 @@ async def run(track: str | None) -> None:
         for event in (events.structured_content or {}).get("items", []):
             print(f"  {event['start_at'][:10]}  {event['name']}")
 
-        # "Which of my cars is on track?" is one call. `streaming` is null on a
+        # "Which of my cars is on track?" is one call. `is_streaming` is null on a
         # session when Podium cannot tell; with the filter, Podium answers an
         # error rather than a list it cannot vouch for.
-        live = await client.call_tool("list_event_devices", {"streaming": True})
+        live = await client.call_tool("list_event_devices", {"is_streaming": True})
         if live.is_error:
             print("\nCould not check which cars are on track:", live.content[0].text if live.content else "")
         else:

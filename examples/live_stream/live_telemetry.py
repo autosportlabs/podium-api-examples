@@ -8,7 +8,7 @@
 
 How it works:
 
-1. Check the session's `streaming` field, then ask the API for a live stream link
+1. Check the session's `is_streaming` field, then ask the API for a live stream link
    (POST /v1/event-devices/{id}/live-stream-url/). The API key needs the
    live_stream_read scope, and event_device_read for the check and for --latest.
 2. Connect to the broadcaster at the link's URL, over Socket.IO on a WebSocket.
@@ -82,12 +82,12 @@ def live_stream_link(client: httpx.Client, event_device_id: str, expires_in: int
 
 
 def streaming_now(client: httpx.Client, edid: str) -> bool | None:
-    """The session's `streaming` field: True, False, or None when Podium cannot tell.
+    """The session's `is_streaming` field: True, False, or None when Podium cannot tell.
 
     Best effort: a key without event_device_read just skips the check.
     """
     response = client.get(f"event-devices/{edid}/")
-    return response.json().get("streaming") if response.status_code == 200 else None
+    return response.json().get("is_streaming") if response.status_code == 200 else None
 
 
 def describe_status(status: Any) -> str:

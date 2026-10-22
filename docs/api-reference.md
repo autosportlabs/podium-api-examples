@@ -144,7 +144,7 @@ Newest first, by start time. A session of a device that has since been deleted i
 | `event` | Event ID |
 | `device` | Device ID |
 | `is_archived` | Boolean |
-| `streaming` | Boolean: only the sessions whose device is, or is not, streaming right now. If Podium cannot check, the list answers `503` with `Retry-After: 5`, rather than a wrong list |
+| `is_streaming` | Boolean: only the sessions whose device is, or is not, streaming right now. If Podium cannot check, the list answers `503` with `Retry-After: 5`, rather than a wrong list |
 | `venue`, `venue_name` | Where the session ran; see [Venues](#venues). This finds your sessions at events another account organised, which an event search cannot |
 
 | Field | Type | Notes |
@@ -158,7 +158,7 @@ Newest first, by start time. A session of a device that has since been deleted i
 | `source`, `source_ver` | string | The data system that produced the session, and its version, when known |
 | `device_sn` | string | The logger's serial number, when known. Empty string if not. **API keys only:** absent for OAuth tokens, because it is usually the device's streaming key |
 | `competitor_number` | string | The car number, when known. Empty string if not |
-| `streaming` | boolean or null | `true` while the device is streaming this session right now, `false` when it is not, `null` when Podium cannot tell |
+| `is_streaming` | boolean or null | `true` while the device is streaming this session right now, `false` when it is not, `null` when Podium cannot tell |
 | `venue` | object or null | Where it ran, also at events another account organised; see [Venues](#venues) |
 
 ### Live stream links
@@ -179,7 +179,7 @@ POST /v1/event-devices/{id}/live-stream-url/
 
 The link is a credential: anyone with it can watch until it expires. Do not log it.
 
-**Check `streaming` first** if you only want a live session: it saves a connection to a device
+**Check `is_streaming` first** if you only want a live session: it saves a connection to a device
 that is not sending. A link to a session that is not streaming still works, and the stream's
 status event says when the device starts.
 

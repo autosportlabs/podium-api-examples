@@ -78,7 +78,7 @@ any of them; the agent then simply does not see the tools that need it. Untickin
 | `get_event` | `event_read` | `event_id` |
 | `list_devices` | `device_read` | `is_private`, `page`, `page_size` |
 | `get_device` | `device_read` | `device_id` |
-| `list_event_devices` | `event_device_read` | `event`, `device`, `is_archived`, `streaming`, `venue`, `venue_name`, `page`, `page_size` |
+| `list_event_devices` | `event_device_read` | `event`, `device`, `is_archived`, `is_streaming`, `venue`, `venue_name`, `page`, `page_size` |
 | `get_event_device` | `event_device_read` | `event_device_id` |
 | `list_laps` | `lap_read` | `event_device`, `event`, `include_aggregates`, `page`, `page_size` |
 | `get_lap` | `lap_read` | `lap_id` |
@@ -88,13 +88,13 @@ any of them; the agent then simply does not see the tools that need it. Untickin
 
 Objects have the same fields as in the [API reference](api-reference.md), apart from a
 device's `streaming_key` and a session's `device_sn`, which tokens never receive. Sessions carry
-`streaming`, so "which of my cars is on track?" is one call: `list_event_devices` with
-`streaming: true`.
+`is_streaming`, so "which of my cars is on track?" is one call: `list_event_devices` with
+`is_streaming: true`.
 
 Events and sessions carry their `venue` (`id`, `name`, `configuration`), and both list tools
 filter by it with `venue` and `venue_name`, the same rules as the [REST filters](api-reference.md#venues).
 "Which sessions did I run at Laguna Seca?" is `list_event_devices` with `venue_name: "laguna"`,
-and it finds your sessions at events another account organised too. Add `streaming: true` for
+and it finds your sessions at events another account organised too. Add `is_streaming: true` for
 "who is on track at Thunderhill right now?".
 
 `list_laps` leaves each lap's per-channel `aggregates` out unless `include_aggregates` is true;
@@ -136,8 +136,8 @@ List tools return a page:
 Detail tools return `{"item": { … }}`.
 
 A refused call comes back as a tool error whose message says what was wrong: a bad argument
-(such as `streaming: "maybe"` or a malformed date), a missing scope, or live status being
-unavailable for `streaming`. Agents read the message and adjust, as for any tool error.
+(such as `is_streaming: "maybe"` or a malformed date), a missing scope, or live status being
+unavailable for `is_streaming`. Agents read the message and adjust, as for any tool error.
 
 ## What agents should know about the data
 
@@ -147,6 +147,6 @@ Agents get these from the tool descriptions, but they are worth putting in your 
 - A lap with no `lap_time` is an untimed out lap, in lap or transit, not a lap.
 - For counts, best laps and session statistics, use `get_lap_summary` and `get_best_laps`
   rather than paging through `list_laps`.
-- A session's `streaming` is null when Podium cannot tell, which is not the same as false.
+- A session's `is_streaming` is null when Podium cannot tell, which is not the same as false.
 - Layouts of one venue are different tracks. Compare lap times only within one `venue.id`.
 - To pick a track, use `venue_name` or `venue`, not an event name search.

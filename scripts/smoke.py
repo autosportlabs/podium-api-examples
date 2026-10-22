@@ -6,7 +6,7 @@
 Runs what it can with the credentials it finds and skips the rest:
 
 - always: the OAuth and MCP discovery documents and the unauthenticated answers;
-- with PODIUM_API_KEY: every /v1/ list endpoint, filters (including `streaming`,
+- with PODIUM_API_KEY: every /v1/ list endpoint, filters (including `is_streaming`,
   the venue filters and the boolean filters) and pagination;
 - with tokens saved by examples/oauth_cli (and PODIUM_PUBLIC_CLIENT_ID): a
   refresh, a Bearer call to /v1/, and a tools/list on /mcp.
@@ -170,14 +170,16 @@ if API_KEY:
         results = response.json()["results"]
         if not results:
             return "no sessions to look at"
-        assert "streaming" in results[0], f"fields {sorted(results[0])}"
-        assert results[0]["streaming"] in (True, False, None), f"streaming is {results[0]['streaming']!r}"
-        return f"streaming {results[0]['streaming']}"
+        assert "is_streaming" in results[0], f"fields {sorted(results[0])}"
+        assert results[0]["is_streaming"] in (True, False, None), (
+            f"is_streaming is {results[0]['is_streaming']!r}"
+        )
+        return f"is_streaming {results[0]['is_streaming']}"
 
     def streaming_filter() -> str:
         response = http.get(
             f"{API_BASE}/v1/event-devices/",
-            params={"streaming": "true", "page_size": 100},
+            params={"is_streaming": "true", "page_size": 100},
             headers=key_headers,
         )
         if response.status_code == 503:
@@ -186,7 +188,9 @@ if API_KEY:
             return f"503: live status unavailable, Retry-After {response.headers['Retry-After']}"
         assert response.status_code == 200, f"status {response.status_code}: {response.text[:200]}"
         live = response.json()["results"]
-        assert all(session.get("streaming") is True for session in live), "a listed session is not streaming"
+        assert all(session.get("is_streaming") is True for session in live), (
+            "a listed session is not streaming"
+        )
         return f"{len(live)} streaming now"
 
     def boolean_filters_are_strict() -> None:
@@ -234,10 +238,10 @@ if API_KEY:
         assert rows and all(word.lower() in venue_text(row["venue"]) for row in rows), "a row does not match"
         return f"bad id refused; venue_name={word!r} -> {len(rows)}"
 
-    check("API key: sessions carry `streaming`", sessions_carry_streaming)
+    check("API key: sessions carry `is_streaming`", sessions_carry_streaming)
     check("API key: events and sessions carry `venue`, three fields only", rows_carry_venue)
     check("API key: venue filters narrow, and a bad venue id is refused", venue_filters)
-    check("API key: the streaming filter lists only live sessions", streaming_filter)
+    check("API key: the is_streaming filter lists only live sessions", streaming_filter)
     check(
         "API key: a boolean filter takes true/false/1/0 and refuses anything else", boolean_filters_are_strict
     )

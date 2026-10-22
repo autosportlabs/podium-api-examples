@@ -38,7 +38,7 @@ def main() -> int:
     # Best effort: a key without event_device_read skips it.
     session = httpx.get(f"{API_BASE}/v1/event-devices/{args.event_device_id}/", headers=headers, timeout=30)
     if session.status_code == 200:
-        streaming = session.json().get("streaming")
+        streaming = session.json().get("is_streaming")
         if streaming is False:
             print("Note: the session is not streaming right now.", file=sys.stderr)
         elif streaming is None:

@@ -7,7 +7,7 @@ Errors are JSON. Most carry a `detail` message; a bad filter names the field ins
 | Status | Example body | Meaning | What to do |
 | --- | --- | --- | --- |
 | 400 | `{"time_filter": ["Select a valid choice. …"]}` | A filter or body value is invalid | Fix the request |
-| 400 | `{"streaming": ["Use true or false."]}` | A boolean filter got something other than `true`, `false`, `1` or `0` | Fix the request |
+| 400 | `{"is_streaming": ["Use true or false."]}` | A boolean filter got something other than `true`, `false`, `1` or `0` | Fix the request |
 | 400 | `{"venue": ["Enter a valid UUID."]}` | An ID filter got something that is not an ID | Fix the request |
 | 400 | `{"venue_name": ["Ensure this value has at most 200 characters (it has 240)."]}` | A text filter is too long | Shorten it: a track name needs a few words |
 | 401 | `{"detail": "Authentication credentials were not provided."}` | No credential | Send one |
@@ -18,7 +18,7 @@ Errors are JSON. Most carry a `detail` message; a bad filter names the field ins
 | 403 | `{"detail": "Credential lacks the required scope.", "required_scopes": ["…"]}` | The endpoint needs a scope you did not get, or the user unticked | Ask for the scope, or skip the call |
 | 404 | `{"detail": "Not found."}` | No such object, **or one this credential may not see** | Treat both the same |
 | 429 | `{"detail": "Request was throttled. Expected available in 12 seconds."}` | Rate limited | Wait for `Retry-After` seconds, then retry |
-| 503 | `{"detail": "Live status is unavailable right now. Try again shortly, or list without the streaming filter."}` | The `streaming` filter could not check which devices are live | Wait for `Retry-After` seconds (5), or list without the filter: the sessions then say `streaming: null` |
+| 503 | `{"detail": "Live status is unavailable right now. Try again shortly, or list without the is_streaming filter."}` | The `is_streaming` filter could not check which devices are live | Wait for `Retry-After` seconds (5), or list without the filter: the sessions then say `is_streaming: null` |
 | 5xx | | A fault at Podium | Retry later with backoff |
 
 Podium answers 404, not 403, for another account's objects, so a response never confirms
