@@ -1,0 +1,11 @@
+# The REST and OAuth examples use plain httpx so the HTTP is visible.
+httpx>=0.28
+python-dotenv>=1.0
+# The OAuth server-side web app example.
+flask>=3.0
+# The MCP client example uses the official MCP Python SDK.
+mcp>=2.3
+# The Claude API example.
+anthropic>=1.13
+# The live stream example connects to the broadcaster over Socket.IO.
+python-socketio[client]>=5.10
