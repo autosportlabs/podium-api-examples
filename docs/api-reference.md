@@ -44,10 +44,10 @@ The event and session lists filter by venue:
 | Filter | Meaning |
 | --- | --- |
 | `venue` | Venue ID, for an exact match |
-| `venue_name` | Every word must appear in the venue's name or layout. `thunderhill` matches every Thunderhill layout; `thunderhill east` only the East one |
+| `venue_name` | Every word must appear in the venue's name or layout. `thunderhill` matches every Thunderhill layout; `thunderhill east` only the East one. At most 200 characters |
 
 Both only narrow your own events and sessions, so they match only venues where you have
-been. A malformed `venue` answers `400`.
+been. A malformed `venue`, or a `venue_name` over 200 characters, answers `400`.
 
 ## Pagination
 

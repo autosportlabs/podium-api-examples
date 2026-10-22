@@ -118,7 +118,8 @@ in California starts on Saturday in UTC, so widen the range by a day when local 
 Each row carries its `venue`: `id`, `name` and `configuration`, the layout. Pick a track with:
 
 - `venue_name`: every word must appear in the venue's name or layout. "thunderhill" matches
-  every Thunderhill layout; "thunderhill east" only the East one.
+  every Thunderhill layout; "thunderhill east" only the East one. At most 200 characters, here
+  and on the event and session tools; a longer one is a tool error.
 - `venue`: a venue ID from a row, for an exact match.
 
 Both only match venues where your own cars have run. Layouts are different tracks, so compare
