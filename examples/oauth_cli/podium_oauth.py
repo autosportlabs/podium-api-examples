@@ -10,9 +10,8 @@ Register a *public* application in Podium (Settings > OAuth applications) with
 the redirect URI http://127.0.0.1:8765/callback, and set its client ID as
 PODIUM_PUBLIC_CLIENT_ID in .env.
 
-Tokens are saved beside this repository's README, in .podium-tokens.<host>.json
-for the Podium in PODIUM_API_BASE. That
-file is a credential: it is git-ignored and readable only by you.
+Tokens are saved beside this repository's README, in .podium-tokens.<host>.json.
+That file is a credential: it is git-ignored and readable only by you.
 """
 
 import argparse
@@ -35,11 +34,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# No default: say which Podium you mean. Staging and production are separate
-# systems with separate accounts, and a wrong guess is a confusing failure.
-API_BASE = os.environ.get("PODIUM_API_BASE", "").rstrip("/")
-if not API_BASE:
-    sys.exit("Set PODIUM_API_BASE in .env: https://api.staging.podium.live or https://api.podium.live")
+API_BASE = (os.environ.get("PODIUM_API_BASE") or "https://api.podium.live").rstrip("/")
 CLIENT_ID = os.environ.get("PODIUM_PUBLIC_CLIENT_ID", "")
 # RFC 8252: a native app receives the redirect on a loopback address over plain
 # http, the only place Podium accepts http. Use the IP rather than "localhost",
@@ -48,15 +43,15 @@ REDIRECT_HOST, REDIRECT_PORT = "127.0.0.1", 8765
 REDIRECT_URI = f"http://{REDIRECT_HOST}:{REDIRECT_PORT}/callback"
 # Ask only for what the program uses. The user sees this list on the consent screen.
 SCOPES = "event_read event_device_read device_read lap_read"
-# One file per Podium host, so staging and production sign-ins never mix.
+# One file per Podium host, so sign-ins to different servers never mix.
 TOKEN_FILE = Path(__file__).resolve().parents[2] / f".podium-tokens.{urlsplit(API_BASE).hostname}.json"
 
 
 def discover() -> dict[str, Any]:
     """The authorization server's endpoints, from its metadata document (RFC 8414).
 
-    Reading them rather than hard-coding them is what lets the same program
-    work against staging and production. The issuer check catches a server
+    Reading them rather than hard-coding them keeps the program working if
+    Podium's endpoints move. The issuer check catches a server
     that is misconfigured, or a metadata document that is not Podium's.
     """
     metadata = (

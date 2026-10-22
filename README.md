@@ -21,16 +21,15 @@ request acts for and who holds the credential.
 
 ```bash
 make venv
-cp .env.example .env      # then set PODIUM_API_BASE, and what the example you want needs
+cp .env.example .env      # then add the credentials the example you want needs
 .venv/bin/python examples/api_key/best_laps.py Thunderhill
 ```
 
-Start with [Getting started](docs/getting-started.md). It covers access, environments and the
-first request.
+Start with [Getting started](docs/getting-started.md). It covers access and the first request.
 
 ## Documentation
 
-- [Getting started](docs/getting-started.md): access, environments, your first request
+- [Getting started](docs/getting-started.md): access, addresses, your first request
 - [Authentication](docs/authentication.md): API keys, OAuth 2.0, scopes, tokens
 - [API reference](docs/api-reference.md): every endpoint, field and filter
 - [Errors and rate limits](docs/errors-and-limits.md): what each failure means and what to do
@@ -49,13 +48,11 @@ first request.
 | [`claude_api/ask_podium.py`](examples/claude_api/ask_podium.py) | Ask Claude a question with Podium's MCP server attached through the Claude API. |
 | [`scripts/smoke.py`](scripts/smoke.py) | Integration checks against a deployment, from the outside. `make smoke`. |
 
-## Environments
+## Addresses
 
-| | API base URL | Web app |
-| --- | --- | --- |
-| Production | `https://api.podium.live` | `https://app.podium.live` |
-| Staging | `https://api.staging.podium.live` | `https://app.staging.podium.live` |
+| | URL |
+| --- | --- |
+| API | `https://api.podium.live` |
+| Web app | `https://app.podium.live` |
 
-Every example needs `PODIUM_API_BASE` set to one of these; there is no default. Staging has its
-own accounts and data, separate from production, so a key or application from one does not
-work on the other.
+The examples talk to `https://api.podium.live`.

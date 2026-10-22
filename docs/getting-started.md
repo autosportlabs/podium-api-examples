@@ -15,16 +15,15 @@ OAuth, because a token acts as that user. Without the first, the consent screen 
 With the first but not the second, the user can approve, but every request made with their
 token answers 403 with a message about the plan.
 
-## Environments
+## Addresses
 
-| | API base URL |
+| | URL |
 | --- | --- |
-| Production | `https://api.podium.live` |
-| Staging | `https://api.staging.podium.live` |
+| API | `https://api.podium.live` |
+| Web app | `https://app.podium.live` |
 
-Build and test against staging. It is a separate Podium with its own sign-ins, so create your
-account, keys and applications there. Every example requires `PODIUM_API_BASE`, with no default,
-so it always says which one it is talking to.
+The API is read-only apart from creating live stream links, so nothing you build against it can
+change your data.
 
 ## Your first request
 
@@ -34,7 +33,7 @@ so it always says which one it is talking to.
 4. Call the API:
 
 ```bash
-curl https://api.staging.podium.live/v1/events/ \
+curl https://api.podium.live/v1/events/ \
   -H "Authorization: Api-Key YOUR_KEY"
 ```
 

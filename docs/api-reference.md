@@ -1,6 +1,6 @@
 # API reference
 
-Base URL: `https://api.podium.live/v1/` (staging: `https://api.staging.podium.live/v1/`).
+Base URL: `https://api.podium.live/v1/`.
 Every request needs a credential; see [Authentication](authentication.md).
 
 ## What a credential sees

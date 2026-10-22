@@ -19,7 +19,6 @@ import hashlib
 import html
 import os
 import secrets
-import sys
 import time
 from typing import Any
 from urllib.parse import urlencode
@@ -30,11 +29,7 @@ from flask import Flask, abort, redirect, request, session
 
 load_dotenv()
 
-# No default: say which Podium you mean. Staging and production are separate
-# systems with separate accounts, and a wrong guess is a confusing failure.
-API_BASE = os.environ.get("PODIUM_API_BASE", "").rstrip("/")
-if not API_BASE:
-    sys.exit("Set PODIUM_API_BASE in .env: https://api.staging.podium.live or https://api.podium.live")
+API_BASE = (os.environ.get("PODIUM_API_BASE") or "https://api.podium.live").rstrip("/")
 CLIENT_ID = os.environ.get("PODIUM_WEB_CLIENT_ID", "")
 CLIENT_SECRET = os.environ.get("PODIUM_WEB_CLIENT_SECRET", "")
 REDIRECT_URI = os.environ.get("PODIUM_WEB_REDIRECT_URI", "http://127.0.0.1:5000/callback")

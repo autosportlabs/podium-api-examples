@@ -1,7 +1,7 @@
 """Integration checks for a Podium deployment, from the outside, as a client.
 
-    python scripts/smoke.py                  # against PODIUM_API_BASE from .env
-    PODIUM_API_BASE=https://api.podium.live python scripts/smoke.py
+    python scripts/smoke.py                                     # against https://api.podium.live
+    PODIUM_API_BASE=http://localhost:8000 python scripts/smoke.py   # or another server
 
 Runs what it can with the credentials it finds and skips the rest:
 
@@ -29,11 +29,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# No default: say which Podium you mean. Staging and production are separate
-# systems with separate accounts, and a wrong guess is a confusing failure.
-API_BASE = os.environ.get("PODIUM_API_BASE", "").rstrip("/")
-if not API_BASE:
-    sys.exit("Set PODIUM_API_BASE in .env: https://api.staging.podium.live or https://api.podium.live")
+API_BASE = (os.environ.get("PODIUM_API_BASE") or "https://api.podium.live").rstrip("/")
 API_KEY = os.environ.get("PODIUM_API_KEY", "")
 PUBLIC_CLIENT_ID = os.environ.get("PODIUM_PUBLIC_CLIENT_ID", "")
 # The token examples/oauth_cli saved for this Podium.

@@ -7,8 +7,8 @@ attached through the Claude API's MCP connector.
 Anthropic's servers connect to Podium's MCP server and call its tools while
 Claude answers. Two things follow from that:
 
-- PODIUM_API_BASE must be a public Podium (staging or production). Anthropic
-  cannot reach a server on your own machine.
+- Podium must be reachable from the internet: Anthropic cannot reach a
+  server on your own machine.
 - Claude acts with an access token you supply. This example reuses the one
   examples/oauth_cli saves, so run `podium_oauth.py login` first. Your
   application would use the token from its own OAuth sign-in.
@@ -27,11 +27,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# No default: say which Podium you mean. Staging and production are separate
-# systems with separate accounts, and a wrong guess is a confusing failure.
-API_BASE = os.environ.get("PODIUM_API_BASE", "").rstrip("/")
-if not API_BASE:
-    sys.exit("Set PODIUM_API_BASE in .env: https://api.staging.podium.live or https://api.podium.live")
+API_BASE = (os.environ.get("PODIUM_API_BASE") or "https://api.podium.live").rstrip("/")
 # The token examples/oauth_cli saved for this Podium.
 TOKEN_FILE = Path(__file__).resolve().parents[2] / f".podium-tokens.{urlsplit(API_BASE).hostname}.json"
 

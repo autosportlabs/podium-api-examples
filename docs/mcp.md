@@ -6,7 +6,7 @@ this weekend?", "give the pit crew a live link for car 42".
 
 | | |
 | --- | --- |
-| URL | `https://api.podium.live/mcp` (staging: `https://api.staging.podium.live/mcp`) |
+| URL | `https://api.podium.live/mcp` |
 | Transport | Streamable HTTP |
 | Authorization | OAuth 2.0, with discovery and dynamic client registration |
 | Access | Read-only, plus creating live stream links |

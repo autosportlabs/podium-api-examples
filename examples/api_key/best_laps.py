@@ -26,11 +26,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# No default: say which Podium you mean. Staging and production are separate
-# systems with separate accounts, and a wrong guess is a confusing failure.
-API_BASE = os.environ.get("PODIUM_API_BASE", "").rstrip("/")
-if not API_BASE:
-    sys.exit("Set PODIUM_API_BASE in .env: https://api.staging.podium.live or https://api.podium.live")
+API_BASE = (os.environ.get("PODIUM_API_BASE") or "https://api.podium.live").rstrip("/")
 PAGE_SIZE = 100  # The largest page the API serves.
 MAX_RATE_LIMIT_WAITS = 5
 

@@ -43,14 +43,10 @@ from mcp.shared.auth import OAuthClientInformationFull, OAuthClientMetadata, OAu
 
 load_dotenv()
 
-# No default: say which Podium you mean. Staging and production are separate
-# systems with separate accounts, and a wrong guess is a confusing failure.
-API_BASE = os.environ.get("PODIUM_API_BASE", "").rstrip("/")
-if not API_BASE:
-    sys.exit("Set PODIUM_API_BASE in .env: https://api.staging.podium.live or https://api.podium.live")
+API_BASE = (os.environ.get("PODIUM_API_BASE") or "https://api.podium.live").rstrip("/")
 MCP_URL = f"{API_BASE}/mcp"
 REDIRECT_HOST, REDIRECT_PORT = "127.0.0.1", 8766
-# One file per Podium host, so staging and production sign-ins never mix.
+# One file per Podium host, so sign-ins to different servers never mix.
 STATE_FILE = Path(__file__).resolve().parents[2] / f".podium-mcp.{urlsplit(API_BASE).hostname}.json"
 
 
