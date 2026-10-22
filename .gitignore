@@ -1,0 +1,7 @@
+.venv/
+__pycache__/
+*.pyc
+.env
+# Tokens the examples save between runs. They are credentials.
+.podium-tokens*.json
+.podium-mcp*.json
