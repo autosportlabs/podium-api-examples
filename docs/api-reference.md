@@ -255,8 +255,9 @@ In the order they were driven.
 | `aggregates` | object | Per channel: `min`, `max`, `avg` and sample `count` over the lap |
 
 A lap with a null `lap_time` is an untimed fragment: an out lap, an in lap, or a stage transit.
-Leave it out of lap counts and best laps. A `lap_time` of `0` is a timing glitch, not a lap
-record: Podium's own best-lap figures leave it out, and so should yours.
+Leave it out of lap counts and best laps. A `lap_time` of `0` is a timing glitch: it is still a
+timed lap, counted and numbered like the others, but never the best lap. Podium's own lap
+summaries treat it that way, and so should yours.
 
 `aggregates` looks like this:
 

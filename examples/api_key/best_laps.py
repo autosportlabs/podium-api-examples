@@ -113,18 +113,21 @@ def main() -> int:
             print(f"\n{event['name']}  ({event['start_at'][:10]})")
             for session in paginate(client, "event-devices/", {"event": event["id"]}):
                 # A lap with no lap_time is an untimed fragment (an out lap or
-                # in lap), not a lap: leave it out of "best".
+                # in lap), not a lap. A lap time of 0 is a timed lap, counted and
+                # numbered like the others, but a timing glitch, so never "best":
+                # the same rules as Podium's own lap summaries.
                 timed = [
                     lap
                     for lap in paginate(client, "laps/", {"event_device": session["id"]})
-                    if lap["lap_time"]
+                    if lap["lap_time"] is not None
                 ]
+                candidates = [lap for lap in timed if lap["lap_time"] > 0]
                 number = session["competitor_number"]
                 label = f"car {number}" if number else f"session {session['id'][:8]}"
-                if not timed:
+                if not candidates:
                     print(f"  {label}: no timed laps")
                     continue
-                best = min(timed, key=lambda lap: lap["lap_time"])
+                best = min(candidates, key=lambda lap: lap["lap_time"])
                 print(
                     f"  {label}: best lap {best['lap_number']} in {format_lap_time(best['lap_time'])}"
                     f" of {len(timed)} timed laps"
