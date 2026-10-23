@@ -6,7 +6,7 @@ The API is in early access. To use it, your Podium user needs two things:
 
 1. **The REST API turned on for your user.** Ask Autosport Labs. Until it is on, the API
    settings pages do not appear and every request answers 403.
-2. **A plan that includes the REST API, or the integration developer attribute.** Pro and
+2. **A plan that includes the REST API, or the integration developer capability.** Pro and
    Pro Plus include it. A partner building an integration can be given the *integration
    developer* attribute instead, which opens the API on any plan.
 
