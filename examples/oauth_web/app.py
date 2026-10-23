@@ -8,7 +8,8 @@ secret stays on this server and authenticates every call to the token endpoint.
 Then open http://127.0.0.1:5000. Register a *confidential* application in
 Podium (Settings > OAuth applications) with the redirect URI
 http://127.0.0.1:5000/callback, and set PODIUM_WEB_CLIENT_ID and
-PODIUM_WEB_CLIENT_SECRET in .env.
+PODIUM_WEB_CLIENT_SECRET in .env. Registering needs an integration developer
+account (see docs/authentication.md).
 
 A real application keeps tokens in its database, encrypted, keyed to its own
 user. This demo keeps them in process memory so the OAuth steps stay readable.

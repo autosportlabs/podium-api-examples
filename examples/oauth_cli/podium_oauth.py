@@ -8,7 +8,8 @@ authorization code with PKCE, as a public client (no client secret).
 
 Register a *public* application in Podium (Settings > OAuth applications) with
 the redirect URI http://127.0.0.1:8765/callback, and set its client ID as
-PODIUM_PUBLIC_CLIENT_ID in .env.
+PODIUM_PUBLIC_CLIENT_ID in .env. Registering needs an integration developer
+account (see docs/authentication.md).
 
 Tokens are saved beside this repository's README, in .podium-tokens.<host>.json.
 That file is a credential: it is git-ignored and readable only by you.

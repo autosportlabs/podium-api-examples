@@ -10,6 +10,11 @@ The API is in early access. To use it, your Podium user needs two things:
    Pro Plus include it. A partner building an integration can be given the *integration
    developer* attribute instead, which opens the API on any plan.
 
+To **register an OAuth application**, one other Podium users connect to, your account needs
+the integration developer attribute itself: a plan is not enough. Ask Autosport Labs at
+[support@podium.live](mailto:support@podium.live). API keys, for your own data, and AI agents
+connecting through the MCP server need no attribute.
+
 The same two conditions apply to every Podium user who connects to your application through
 OAuth, because a token acts as that user. Without the first, the consent screen does not load.
 With the first but not the second, the user can approve, but every request made with their

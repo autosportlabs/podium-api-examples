@@ -48,6 +48,13 @@ under **Settings > Connected apps**.
 
 ### Register your application
 
+Registering an application is for integration partners: your account needs the *integration
+developer* attribute, whatever its plan. Ask Autosport Labs at
+[support@podium.live](mailto:support@podium.live). The same goes for changing an application's
+name, redirect URIs, scopes or allowed origins later; disabling and deleting it do not need it.
+AI agents and MCP clients do not register here at all: they register themselves (see
+[MCP server](mcp.md#how-an-agent-connects)).
+
 In the web app, open **Settings > OAuth applications** and register your application. Choose
 the client type to match where your code runs:
 
