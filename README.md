@@ -41,7 +41,7 @@ Start with [Getting started](docs/getting-started.md). It covers access and the 
 | --- | --- |
 | [`api_key/best_laps.py`](examples/api_key/best_laps.py) | Find every session at a track by venue, then its best lap, grouped by layout, over plain REST. Pagination, rate limits, errors. (An agent does this in one MCP call, `get_best_laps`.) |
 | [`api_key/live_stream_link.py`](examples/api_key/live_stream_link.py) | Check whether a session is streaming, then create a short-lived link to its live telemetry. |
-| [`live_stream/live_telemetry.py`](examples/live_stream/live_telemetry.py) | Print a session's live telemetry to the console as `channel=value;channel=value`. Status goes to standard error, so the output pipes cleanly. |
+| [`live_stream/live_telemetry.py`](examples/live_stream/live_telemetry.py) | Print a session's live telemetry to the console as `channel=value;channel=value`, and stay connected through network drops: it reconnects with a new link and backfills the gap. With `--device`, it follows a car to its next session. Status goes to standard error, so the output pipes cleanly. |
 | [`oauth_cli/podium_oauth.py`](examples/oauth_cli/podium_oauth.py) | Sign-in for a desktop or command-line program: a public client with PKCE and a loopback redirect. Refresh and sign-out. |
 | [`oauth_web/app.py`](examples/oauth_web/app.py) | Sign-in for a server-side web app: a confidential client with a secret. Connect and disconnect. |
 | [`mcp_client/podium_mcp.py`](examples/mcp_client/podium_mcp.py) | Connect as an MCP client with the official SDK: discovery, self-registration, consent, tool calls. Lists the cars on track now, and with `--track`, this year's best laps at a track by layout. |

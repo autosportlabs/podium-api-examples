@@ -254,8 +254,35 @@ closed), `eventdevice_deleted`, or `session_ended` (the device moved on to anoth
 Nothing else arrives while the device is offline. A socket that closes is different: that is the
 connection lost, not the device. Request a new link before reconnecting.
 
+#### Staying connected
+
+A stream can stay open for a whole race weekend, but your own connection will drop now and then.
+To recover without losing data:
+
+- **Reconnect yourself, with a new link each time.** Turn off your Socket.IO client's own
+  reconnection: it reuses the old URL, whose token may have expired and whose host may have
+  changed. Request a link, connect, and when the socket closes, wait and do it again. Back off
+  between attempts, for example 1, 2, 5, 10, 20 then 30 seconds, and keep trying.
+- **Expect a silent network to take up to about 45 seconds to notice.** Socket.IO's heartbeat
+  closes a connection that has stopped answering; until then the socket looks open.
+- **Backfill after every reconnect.** The broadcaster holds about the last 60 seconds of samples,
+  so a gap shorter than that can be filled. Live samples start arriving before the backfill
+  answer, so hold them until it comes, then print the backfilled samples newer than the last one
+  you had, then the held ones. The backfill overlaps what you already have: drop duplicates by
+  `Utc`. A gap longer than 60 seconds cannot be filled from the stream, though Podium still records
+  it, and the session's [laps](#laps) are complete.
+- **A device going `offline` is not a lost connection.** Keep the socket open; it says `streaming`
+  when the device comes back.
+- **Session changes.** `session_ended` means the device moved on to a new session, so this stream
+  will not carry its data again. To follow the car, look up the device's newest session
+  (`GET /v1/event-devices/?device=<device ID>&page_size=1`) and connect to that.
+  `eventdevice_deleted` means the session is gone; stop.
+- **Treat a link refused straight after the handshake as a stop sign** if it keeps happening: the
+  credential cannot see the session, or has lost its access.
+
 Example: [`examples/live_stream/live_telemetry.py`](../examples/live_stream/live_telemetry.py)
-prints each sample as `channel=value;channel=value`, and reports the status as it changes.
+prints each sample as `channel=value;channel=value`, and reports the status as it changes. It does
+all of the above: run it with `--device <device ID>` to follow a car through a race weekend.
 
 ## Laps
 
