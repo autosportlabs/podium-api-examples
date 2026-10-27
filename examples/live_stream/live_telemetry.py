@@ -63,10 +63,18 @@ load_dotenv()
 
 API_BASE = (os.environ.get("PODIUM_API_BASE") or "https://api.podium.live").rstrip("/")
 
-# The Socket.IO client logs its own view of a dropped connection ("packet queue
-# is empty, aborting"); this program reports drops itself, in plainer words.
-for _library in ("engineio.client", "socketio.client"):
-    logging.getLogger(_library).setLevel(logging.CRITICAL)
+
+class _QuietDrop(logging.Filter):
+    """Engine.IO logs its own view of a dropped connection ("packet queue is
+    empty, aborting"); this program reports drops itself, in plainer words.
+    Only that message is dropped: an error in one of the handlers below still shows.
+    """
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        return "packet queue is empty" not in record.getMessage()
+
+
+logging.getLogger("engineio.client").addFilter(_QuietDrop())
 
 QUIET_WARNING_SECONDS = 15
 # Seconds to wait before each reconnection attempt; the last repeats forever.
@@ -75,6 +83,8 @@ RETRY_DELAYS = (1, 2, 5, 10, 20, 30)
 STABLE_SECONDS = 30
 # A link refused this many times in a row is not a network problem: stop.
 MAX_REFUSALS = 5
+# The longest Retry-After honoured; a longer one falls back to RETRY_DELAYS' last step.
+MAX_RETRY_AFTER_SECONDS = 300
 
 
 class Fatal(Exception):
@@ -100,6 +110,18 @@ def api(api_key: str) -> httpx.Client:
     )
 
 
+def retry_after_seconds(value: str | None) -> float | None:
+    """Retry-After in seconds. It may also be an HTTP date (a load balancer's
+    503, say); that falls back to this program's own delays rather than crashing."""
+    try:
+        seconds = float(value) if value else None
+    except ValueError:
+        return None
+    if seconds is None or seconds > MAX_RETRY_AFTER_SECONDS:
+        return None
+    return seconds
+
+
 def request(client: httpx.Client, method: str, path: str, **kwargs: Any) -> dict[str, Any]:
     """One API call, sorted into success, Transient (retry) or Fatal (stop)."""
     try:
@@ -114,10 +136,9 @@ def request(client: httpx.Client, method: str, path: str, **kwargs: Any) -> dict
     except ValueError:
         detail = ""
     if response.status_code == 429 or response.status_code >= 500:
-        retry_after = response.headers.get("Retry-After")
         raise Transient(
             f"Podium answered {response.status_code} {detail}".strip(),
-            float(retry_after) if retry_after else None,
+            retry_after_seconds(response.headers.get("Retry-After")),
         )
     raise Fatal(f"Podium refused {method} {path}: {response.status_code} {detail}".strip())
 
@@ -179,6 +200,7 @@ class Printed:
     held: list[dict[str, Any]] = field(default_factory=list)
     gap_start: float | None = None
     generation: int = 0  # which hold a timer belongs to
+    closed: bool = False  # standard output has gone (a pipe whose reader exited)
     lock: threading.Lock = field(default_factory=threading.Lock)
 
     def switch_to(self, edid: str) -> None:
@@ -191,6 +213,11 @@ class Printed:
         with self.lock:
             self.holding, self.held, self.gap_start = True, [], self.last_utc
             self.generation += 1
+
+    def requested_backfill(self) -> None:
+        """Called once the request is sent, which on a slow link can be seconds
+        after expect_backfill: give the reply BACKFILL_WAIT_SECONDS from here."""
+        with self.lock:
             generation = self.generation
         timer = threading.Timer(BACKFILL_WAIT_SECONDS, self._give_up_waiting, args=(generation,))
         timer.daemon = True  # never keeps the program alive
@@ -198,8 +225,9 @@ class Printed:
 
     def _give_up_waiting(self, generation: int) -> None:
         with self.lock:
-            stale = generation != self.generation
-        if not stale:
+            waiting = self.holding and generation == self.generation
+        if waiting:
+            note(f"no backfill reply in {BACKFILL_WAIT_SECONDS} s; the gap is not filled")
             self.backfill([])
 
     def live(self, sample: dict[str, Any]) -> None:
@@ -229,10 +257,17 @@ class Printed:
             self.holding, self.held = False, []
 
     def _print(self, sample: dict[str, Any]) -> None:
+        if self.closed:
+            return
         utc = utc_of(sample)
         if utc is not None:
             self.last_utc = utc if self.last_utc is None else max(self.last_utc, utc)
-        print(format_sample(sample), flush=True)
+        try:
+            print(format_sample(sample), flush=True)
+        except BrokenPipeError:
+            # This runs on Socket.IO's thread, which would swallow the error;
+            # watch() and run() check the flag and stop.
+            self.closed = True
 
 
 def describe_status(status: Any) -> str:
@@ -274,23 +309,31 @@ class Outcome:
 
     lasted: float
     connected: bool = True
-    refused: bool = False  # closed by the broadcaster straight after the handshake
+    refused: bool = False  # the broadcaster would not accept the link
     session_over: str | None = None  # "session_ended" or "eventdevice_deleted"
 
 
 def watch(edid: str, link: dict[str, Any], printed: Printed, backfill: bool) -> Outcome:
     """One connection, from connect to disconnect. Ctrl-C propagates."""
     received = threading.Event()
-    state: dict[str, Any] = {"state": None, "over": None, "server_closed": False, "connected": False}
+    state: dict[str, Any] = {"state": None, "over": None, "server_closed": False, "refused_as": None}
     sio = socketio.Client(reconnection=False)
-    started = time.monotonic()
+    started = connected_at = time.monotonic()
 
     @sio.event
     def connect() -> None:
-        state["connected"] = True
+        nonlocal connected_at
+        connected_at = time.monotonic()
         note(f"connected to {link['url'].split('?')[0]} for session {edid}")
         if backfill:
             sio.emit("backfill", json.dumps({"edid": edid}))
+            printed.requested_backfill()
+
+    @sio.event
+    def connect_error(data: Any) -> None:
+        # The broadcaster refuses a bad link at the handshake, with a reason
+        # code such as "invalid_stream_token" or "api_unavailable".
+        state["refused_as"] = data.get("message") if isinstance(data, dict) else str(data)
 
     @sio.event
     def disconnect(*reason: Any) -> None:
@@ -317,9 +360,10 @@ def watch(edid: str, link: dict[str, Any], printed: Printed, backfill: bool) -> 
         note(describe_status(current))
         reason = current.get("reason") if isinstance(current, dict) else None
         if state["state"] == "offline" and reason in ("session_ended", "eventdevice_deleted"):
-            # This session will not stream again; leave so the caller can decide.
+            # This session will not stream again; the loop below leaves so the
+            # caller can decide. Disconnecting here instead would race a connect
+            # still in progress, when the status is the first thing to arrive.
             state["over"] = reason
-            threading.Thread(target=sio.disconnect, daemon=True).start()
 
     @sio.on("*")
     def anything_else(event: str, payload: Any) -> None:
@@ -340,14 +384,20 @@ def watch(edid: str, link: dict[str, Any], printed: Printed, backfill: bool) -> 
         # without the web app's origin when the URL carries the token.
         sio.connect(link["url"], transports=["websocket"], wait_timeout=10)
     except socketio.exceptions.ConnectionError as error:
-        note(f"could not connect to the broadcaster: {error}")
         printed.backfill([])  # nothing is coming; stop holding
-        return Outcome(lasted=time.monotonic() - started, connected=False)
+        lasted = time.monotonic() - started
+        reason = state["refused_as"]
+        if reason and reason != "api_unavailable":
+            # Not the network: a link just created was turned away.
+            note(f"the broadcaster refused the link ({reason})")
+            return Outcome(lasted=lasted, connected=False, refused=True)
+        note(f"could not connect to the broadcaster: {reason or error}")
+        return Outcome(lasted=lasted, connected=False)
     threading.Thread(target=warn_if_quiet, daemon=True).start()
     try:
         # A short sleep loop rather than sio.wait(): that blocks in a thread
         # join that Ctrl-C cannot interrupt, so the program would not stop.
-        while sio.connected:
+        while sio.connected and not printed.closed and state["over"] is None:
             time.sleep(0.25)
     finally:
         if sio.connected:
@@ -356,7 +406,9 @@ def watch(edid: str, link: dict[str, Any], printed: Printed, backfill: bool) -> 
             closer.start()
             closer.join(timeout=3)
     lasted = time.monotonic() - started
-    refused = state["server_closed"] and lasted < 3 and state["over"] is None
+    # An older broadcaster accepted a bad link and closed it at once. Timed from
+    # the connect, since the handshake alone can take seconds on a slow network.
+    refused = state["server_closed"] and time.monotonic() - connected_at < 3 and state["over"] is None
     return Outcome(lasted=lasted, connected=True, refused=refused, session_over=state["over"])
 
 
@@ -365,9 +417,12 @@ def run(client: httpx.Client, target: Target, expires_in: int, backfill_first: b
     failures = 0  # consecutive attempts that did not hold a connection
     refusals = 0
     first = True
+    ended = None  # a session that ended; finding it again means no newer one is listed yet
     while True:
         try:
             edid = target.resolve(client)
+            if edid == ended:
+                raise Transient(f"session {edid} has ended and no newer one is listed yet")
             printed.switch_to(edid)
             link = request(
                 client, "POST", f"event-devices/{edid}/live-stream-url/", json={"expires_in": expires_in}
@@ -383,6 +438,12 @@ def run(client: httpx.Client, target: Target, expires_in: int, backfill_first: b
         # to fill the gap (only newer samples are printed).
         outcome = watch(edid, link, printed, backfill=backfill_first or not first)
         first = False
+        if printed.closed:
+            note("standard output closed; stopping")
+            # Python flushes standard output at exit; with the reader gone that
+            # would raise a BrokenPipeError of its own.
+            os.dup2(os.open(os.devnull, os.O_WRONLY), sys.stdout.fileno())
+            return 0
 
         if outcome.session_over == "eventdevice_deleted":
             note("the session was deleted; stopping")
@@ -392,7 +453,7 @@ def run(client: httpx.Client, target: Target, expires_in: int, backfill_first: b
                 note("this session has ended (the device moved on); use --device to follow the car")
                 return 0
             note("the session ended; looking for the device's new session")
-            failures = 0
+            ended, failures = edid, 0
             continue
         if not reconnect:
             note("disconnected; not reconnecting (--no-reconnect)")

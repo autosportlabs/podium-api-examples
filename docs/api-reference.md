@@ -198,8 +198,10 @@ exactly as given, on the default namespace.
   `streamToken`, but the broadcaster refuses a WebSocket handshake that has an `Origin` header
   and no token in its URL. Python's WebSocket client sends one, so the `auth` form fails there.
 - **The token only gates the connection.** An open stream stays open after `expires_at`.
-- **A refused link,** expired or for a session the credential cannot see, is disconnected by the
-  broadcaster straight after the handshake.
+- **A refused link** gets a Socket.IO `connect_error` instead of a connection, with a reason in
+  `message`: `invalid_stream_token` when the link is expired, altered or not a link at all. The
+  API checks the credential's access to the session when it creates the link, so a credential
+  that has lost access is refused there, with a `403` or `404`.
 - **The stream is receive only.**
 
 The broadcaster emits these events, named after the session ID (`{edid}`):
@@ -277,8 +279,9 @@ To recover without losing data:
   will not carry its data again. To follow the car, look up the device's newest session
   (`GET /v1/event-devices/?device=<device ID>&page_size=1`) and connect to that.
   `eventdevice_deleted` means the session is gone; stop.
-- **Treat a link refused straight after the handshake as a stop sign** if it keeps happening: the
-  credential cannot see the session, or has lost its access.
+- **A link you just created should not be refused.** If `connect_error` says
+  `invalid_stream_token` a few times in a row, something is wrong with your setup, not the
+  network: stop rather than retry forever.
 
 Example: [`examples/live_stream/live_telemetry.py`](../examples/live_stream/live_telemetry.py)
 prints each sample as `channel=value;channel=value`, and reports the status as it changes. It does

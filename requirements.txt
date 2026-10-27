@@ -8,4 +8,4 @@ mcp>=2.3
 # The Claude API example.
 anthropic>=1.13
 # The live stream example connects to the broadcaster over Socket.IO.
-python-socketio[client]>=5.10
+python-socketio[client]>=5.12
